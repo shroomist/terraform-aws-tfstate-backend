@@ -90,6 +90,12 @@ variable "profile" {
   description = "AWS profile name as set in the shared credentials file"
 }
 
+variable "shared_credentials_file" {
+  type = string
+  default = ""
+  description = "(Optional) Path to the AWS shared credentials file. Defaults to ~/.aws/credentials"
+}
+
 variable "role_arn" {
   type        = string
   default     = ""

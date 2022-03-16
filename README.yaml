@@ -119,6 +119,7 @@ usage: |-
         bucket         = "< the name of the S3 state bucket >"
         key            = "terraform.tfstate"
         dynamodb_table = "< the name of the DynamoDB locking table >"
+        shared_credentials_file = "< path to shared credentials file if defined >"
         profile        = ""
         role_arn       = ""
         encrypt        = true

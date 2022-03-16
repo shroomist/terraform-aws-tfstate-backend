@@ -36,6 +36,7 @@ locals {
     encrypt              = var.enable_server_side_encryption ? "true" : "false"
     role_arn             = var.role_arn
     profile              = var.profile
+    shared_credentials_file = var.shared_credentials_file
     terraform_version    = var.terraform_version
     terraform_state_file = var.terraform_state_file
     namespace            = var.namespace

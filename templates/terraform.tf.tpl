@@ -8,6 +8,9 @@ terraform {
     %{~ if dynamodb_table != "" ~}
     dynamodb_table = "${dynamodb_table}"
     %{~ endif ~}
+    %{~ if shared_credentials_file != "" ~}
+    shared_credentials_file = "${shared_credentials_file}"
+    %{~ endif ~}
     profile        = "${profile}"
     role_arn       = "${role_arn}"
     encrypt        = "${encrypt}"
