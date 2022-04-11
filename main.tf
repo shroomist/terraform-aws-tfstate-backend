@@ -154,54 +154,61 @@ module "log_storage" {
   context = module.this.context
 }
 
+resource "aws_s3_bucket_acl" "state_acl" {
+  bucket = aws_s3_bucket.default[0].id
+  acl    = var.acl
+}
+
+resource "aws_s3_bucket_versioning" "state_versioning" {
+  bucket = aws_s3_bucket.default[0].id
+  versioning_configuration {
+    status = "Enabled"
+    mfa_delete = var.mfa_delete ? "Enabled" : "Disabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "state_sse" {
+  bucket = aws_s3_bucket.default[0].id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_logging" "state_logging" {
+  count = var.logging == null ? 0 : 1
+  bucket = aws_s3_bucket.default[0].id
+  target_bucket = local.logging_bucket_name
+  target_prefix = local.logging_prefix
+}
+
+resource "aws_s3_bucket_replication_configuration" "state_replication" {
+  count = var.s3_replication_enabled ? 1 : 0
+  bucket = aws_s3_bucket.default[0].id
+  depends_on = [aws_s3_bucket_versioning.state_versioning]
+  role = aws_iam_role.replication[0].arn
+
+  rule {
+    id     = module.this.id
+    prefix = ""
+    status = "Enabled"
+
+    destination {
+      bucket        = var.s3_replica_bucket_arn
+      storage_class = "STANDARD"
+    }
+  }
+}
+
 resource "aws_s3_bucket" "default" {
   count = local.bucket_enabled ? 1 : 0
 
   #bridgecrew:skip=BC_AWS_S3_13:Skipping `Enable S3 Bucket Logging` check until Bridgecrew will support dynamic blocks (https://github.com/bridgecrewio/checkov/issues/776).
   #bridgecrew:skip=CKV_AWS_52:Skipping `Ensure S3 bucket has MFA delete enabled` check due to issues operating with `mfa_delete` in terraform
   bucket        = substr(local.bucket_name, 0, 63)
-  acl           = var.acl
   force_destroy = var.force_destroy
   policy        = local.policy
-
-  versioning {
-    enabled    = true
-    mfa_delete = var.mfa_delete
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
-  dynamic "replication_configuration" {
-    for_each = var.s3_replication_enabled ? toset([var.s3_replica_bucket_arn]) : []
-    content {
-      role = aws_iam_role.replication[0].arn
-
-      rules {
-        id     = module.this.id
-        prefix = ""
-        status = "Enabled"
-
-        destination {
-          bucket        = var.s3_replica_bucket_arn
-          storage_class = "STANDARD"
-        }
-      }
-    }
-  }
-
-  dynamic "logging" {
-    for_each = var.logging == null ? [] : [1]
-    content {
-      target_bucket = local.logging_bucket_name
-      target_prefix = local.logging_prefix
-    }
-  }
 
   tags = module.this.tags
 }
